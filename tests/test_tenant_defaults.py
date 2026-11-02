@@ -1,0 +1,66 @@
+"""Offline checks of the tenant-defaults source: outputs, the narrow data grant and the bucket spec."""
+import json
+from pathlib import Path
+import subprocess
+import unittest
+
+SOURCE = Path(__file__).resolve().parents[1] / 'tenant-defaults' / 'main.jsonnet'
+BUCKET_VERBS = ['get', 'list_objects', 'get_object', 'get_object_version', 'put_object']
+
+
+def render():
+    return json.loads(subprocess.check_output(['jsonnet', str(SOURCE)], stderr=subprocess.PIPE))
+
+
+def by_kind():
+    return {o['kind']: o for o in render()}
+
+
+class TenantDefaultsTemplate(unittest.TestCase):
+    def test_outputs_are_the_bucket_and_its_narrow_grant_and_cluster_scoped(self):
+        objects = render()
+        self.assertEqual(sorted(o['kind'] for o in objects), ['ClusterBucket', 'ClusterRole', 'ClusterRoleBinding'])
+        for o in objects:
+            self.assertNotIn('namespace', o['metadata'])
+            self.assertNotIn('uid', o['metadata'])
+            self.assertNotIn('ownerReferences', o['metadata'])
+
+    def test_bucket_spec_fragment_is_explicit_and_has_no_lifecycle(self):
+        bucket = by_kind()['ClusterBucket']
+        self.assertEqual(bucket['apiVersion'], 'egregon.ai/v1alpha1')
+        self.assertEqual(bucket['metadata']['name'], 'files')
+        self.assertEqual(bucket['spec'], {
+            'presigned_url': {'max_ttl': '24h'},
+            'versioning': {'status': 'Enabled'},
+            'object_lock': {'enabled': False},
+        })
+
+    def test_grant_is_exactly_the_five_data_verbs_on_the_one_bucket_for_authenticated(self):
+        objects = by_kind()
+        role, binding = objects['ClusterRole'], objects['ClusterRoleBinding']
+        self.assertEqual(role['rules'], [{
+            'apiGroups': ['egregon.ai'], 'resources': ['clusterbuckets'],
+            'resourceNames': ['files'], 'verbs': BUCKET_VERBS,
+        }])
+        self.assertNotIn('*', json.dumps(role['rules']))
+        self.assertEqual(binding['subjects'], [{
+            'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'Group', 'name': 'system:authenticated'}])
+        self.assertEqual(binding['roleRef'], {
+            'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'ClusterRole', 'name': role['metadata']['name']})
+        self.assertEqual(binding['metadata']['name'], role['metadata']['name'])
+
+    def test_sync_waves_order_the_grant_before_the_bucket(self):
+        objects = by_kind()
+        wave = {k: int(v['metadata']['annotations']['egregon.ai/sync-wave']) for k, v in objects.items()}
+        self.assertLess(wave['ClusterRole'], wave['ClusterRoleBinding'])
+        self.assertLess(wave['ClusterRoleBinding'], wave['ClusterBucket'])
+
+    def test_source_has_no_external_inputs(self):
+        # The Template-controller supplies nothing to this source beyond the file itself: no parameters, no variables, no imports.
+        text = SOURCE.read_text()
+        for marker in ('std.extVar', 'import ', 'importstr', 'function('):
+            self.assertNotIn(marker, text)
+
+
+if __name__ == '__main__':
+    unittest.main()
