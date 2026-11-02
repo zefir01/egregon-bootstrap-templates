@@ -13,13 +13,23 @@ def render():
 
 
 def by_kind():
-    return {o['kind']: o for o in render()}
+    return {o['kind']: o for o in render() if o['metadata']['name'] in ('files', 'files-bucket-data-access')}
+
+
+def by_name(kind, name):
+    return next(o for o in render() if o['kind'] == kind and o['metadata']['name'] == name)
 
 
 class TenantDefaultsTemplate(unittest.TestCase):
     def test_outputs_are_the_bucket_and_its_narrow_grant_and_cluster_scoped(self):
         objects = render()
-        self.assertEqual(sorted(o['kind'] for o in objects), ['ClusterBucket', 'ClusterRole', 'ClusterRoleBinding'])
+        self.assertEqual(sorted((o['kind'], o['metadata']['name']) for o in objects), [
+            ('ClusterBucket', 'files'),
+            ('ClusterRole', 'files-bucket-data-access'),
+            ('ClusterRole', 'skills-mcp-access'),
+            ('ClusterRoleBinding', 'files-bucket-data-access'),
+            ('ClusterRoleBinding', 'skills-mcp-access'),
+        ])
         for o in objects:
             self.assertNotIn('namespace', o['metadata'])
             self.assertNotIn('uid', o['metadata'])
@@ -48,6 +58,29 @@ class TenantDefaultsTemplate(unittest.TestCase):
         self.assertEqual(binding['roleRef'], {
             'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'ClusterRole', 'name': role['metadata']['name']})
         self.assertEqual(binding['metadata']['name'], role['metadata']['name'])
+
+    def test_files_objects_are_unchanged(self):
+        objects = by_kind()
+        self.assertEqual(objects['ClusterRole']['metadata'], {
+            'name': 'files-bucket-data-access', 'annotations': {'egregon.ai/sync-wave': '-2'}})
+        self.assertEqual(objects['ClusterRoleBinding']['metadata'], {
+            'name': 'files-bucket-data-access', 'annotations': {'egregon.ai/sync-wave': '-1'}})
+        self.assertEqual(objects['ClusterBucket']['metadata'], {
+            'name': 'files', 'annotations': {'egregon.ai/sync-wave': '0'}})
+
+    def test_skills_mcp_grant_is_exactly_use_of_the_one_clustermcp_for_authenticated(self):
+        role = by_name('ClusterRole', 'skills-mcp-access')
+        binding = by_name('ClusterRoleBinding', 'skills-mcp-access')
+        self.assertEqual(role['rules'], [{
+            'apiGroups': ['egregon.ai'], 'resources': ['clustermcps'],
+            'resourceNames': ['skills'], 'verbs': ['get', 'list_skills', 'read_skill'],
+        }])
+        self.assertEqual(binding['roleRef'], {
+            'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'ClusterRole', 'name': 'skills-mcp-access'})
+        self.assertEqual(binding['subjects'], [{
+            'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'Group', 'name': 'system:authenticated'}])
+        self.assertLess(int(role['metadata']['annotations']['egregon.ai/sync-wave']),
+                        int(binding['metadata']['annotations']['egregon.ai/sync-wave']))
 
     def test_sync_waves_order_the_grant_before_the_bucket(self):
         objects = by_kind()

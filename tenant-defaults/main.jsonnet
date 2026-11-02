@@ -4,6 +4,7 @@
 // `files`), and no UID or tenant value is used.
 local bucketName = 'files';
 local accessName = 'files-bucket-data-access';
+local skillsMcpAccessName = 'skills-mcp-access';
 local wave(n) = { 'egregon.ai/sync-wave': n };
 [
   {
@@ -23,6 +24,25 @@ local wave(n) = { 'egregon.ai/sync-wave': n };
     kind: 'ClusterRoleBinding',
     metadata: { name: accessName, annotations: wave('-1') },
     roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: accessName },
+    subjects: [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'Group', name: 'system:authenticated' }],
+  },
+  {
+    apiVersion: 'rbac.authorization.k8s.io/v1',
+    kind: 'ClusterRole',
+    metadata: { name: skillsMcpAccessName, annotations: wave('-2') },
+    // Use of the shared ClusterMcp `skills` (served by the Skills-controller); no ClusterMcp CRUD.
+    rules: [{
+      apiGroups: ['egregon.ai'],
+      resources: ['clustermcps'],
+      resourceNames: ['skills'],
+      verbs: ['get', 'list_skills', 'read_skill'],
+    }],
+  },
+  {
+    apiVersion: 'rbac.authorization.k8s.io/v1',
+    kind: 'ClusterRoleBinding',
+    metadata: { name: skillsMcpAccessName, annotations: wave('-1') },
+    roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: skillsMcpAccessName },
     subjects: [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'Group', name: 'system:authenticated' }],
   },
   {
