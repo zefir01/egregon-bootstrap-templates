@@ -1,60 +1,16 @@
-// Base resources of every Egregon Tenant, rendered by the ClusterTemplateRun `tenant-defaults` that the Tenant-controller
-// creates in each customer Workspace. All outputs are cluster-scoped inside that Workspace. The file takes no parameters and
-// no external variables: the names are part of the shipped profile (Agent templates refer to the bucket as ClusterBucket
-// `files`), and no UID or tenant value is used.
-local bucketName = 'files';
-local accessName = 'files-bucket-data-access';
-local skillsMcpAccessName = 'skills-mcp-access';
-local wave(n) = { 'egregon.ai/sync-wave': n };
-[
-  {
-    apiVersion: 'rbac.authorization.k8s.io/v1',
-    kind: 'ClusterRole',
-    metadata: { name: accessName, annotations: wave('-2') },
-    // Object data of this one bucket, without delete, version history, multipart administration or any bucket CRUD.
-    rules: [{
-      apiGroups: ['egregon.ai'],
-      resources: ['clusterbuckets'],
-      resourceNames: [bucketName],
-      verbs: ['get', 'list_objects', 'get_object', 'get_object_version', 'put_object'],
-    }],
-  },
-  {
-    apiVersion: 'rbac.authorization.k8s.io/v1',
-    kind: 'ClusterRoleBinding',
-    metadata: { name: accessName, annotations: wave('-1') },
-    roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: accessName },
-    subjects: [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'Group', name: 'system:authenticated' }],
-  },
-  {
-    apiVersion: 'rbac.authorization.k8s.io/v1',
-    kind: 'ClusterRole',
-    metadata: { name: skillsMcpAccessName, annotations: wave('-2') },
-    // Use of the shared ClusterMcp `skills` (served by the Skills-controller); no ClusterMcp CRUD.
-    rules: [{
-      apiGroups: ['egregon.ai'],
-      resources: ['clustermcps'],
-      resourceNames: ['skills'],
-      verbs: ['get', 'list_skills', 'read_skill'],
-    }],
-  },
-  {
-    apiVersion: 'rbac.authorization.k8s.io/v1',
-    kind: 'ClusterRoleBinding',
-    metadata: { name: skillsMcpAccessName, annotations: wave('-1') },
-    roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: skillsMcpAccessName },
-    subjects: [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'Group', name: 'system:authenticated' }],
-  },
-  {
-    apiVersion: 'egregon.ai/v1alpha1',
-    kind: 'ClusterBucket',
-    metadata: { name: bucketName, annotations: wave('0') },
-    // No lifecycle expiration: stored history has no hidden retention period. Everything not stated here keeps the
-    // Bucket contract of Egregon.
-    spec: {
-      presigned_url: { max_ttl: '24h' },
-      versioning: { status: 'Enabled' },
-      object_lock: { enabled: false },
-    },
-  },
+// Base resources of every Tenant. Names are part of the shipped profile;
+// all resources belong to the customer Workspace and require no external inputs.
+local egregon = import '../libs/egregon.libsonnet';
+
+egregon.grant('files-bucket-data-access', null, 'system:authenticated', [
+  // Data access to this bucket only; no bucket CRUD, deletion or history listing.
+  egregon.permission(['clusterbuckets'], ['files'],
+                     ['get', 'list_objects', 'get_object', 'get_object_version', 'put_object']),
+], principal_kind='Group', wave=-2, binding_wave=-1) +
+egregon.grant('skills-mcp-access', null, 'system:authenticated', [
+  // The Skills-controller creates this MCP; bootstrap only grants its use.
+  egregon.permission(['clustermcps'], ['skills'], ['get', 'list_skills', 'read_skill']),
+], principal_kind='Group', wave=-2, binding_wave=-1) + [
+  // Versioned storage, no expiration policy.
+  egregon.clusterBucket('files', max_url_ttl='24h', versioning='Enabled', object_lock=false),
 ]

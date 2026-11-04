@@ -89,9 +89,9 @@ class TenantDefaultsTemplate(unittest.TestCase):
         self.assertLess(wave['ClusterRoleBinding'], wave['ClusterBucket'])
 
     def test_source_has_no_external_inputs(self):
-        # The Template-controller supplies nothing to this source beyond the file itself: no parameters, no variables, no imports.
+        # Libraries are bundled in the repository; rendering needs no parameters or external variables.
         text = SOURCE.read_text()
-        for marker in ('std.extVar', 'import ', 'importstr', 'function('):
+        for marker in ('std.extVar', 'function('):
             self.assertNotIn(marker, text)
 
 

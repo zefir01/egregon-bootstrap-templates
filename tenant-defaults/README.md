@@ -6,6 +6,7 @@ and is the only writer of the outputs. Nothing in this repository is secret.
 
 `main.jsonnet` has no parameters and no external variables. Names are part of the shipped profile; no UID, slug or other
 value of a live Tenant is used. All outputs are cluster-scoped inside the Workspace of the Run.
+The bundled `../libs/egregon.libsonnet` builds Egregon resources and grants using `k8s.libsonnet`.
 
 | Kind | Name | Content |
 | --- | --- | --- |
