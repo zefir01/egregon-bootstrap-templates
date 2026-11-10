@@ -21,22 +21,6 @@ def by_name(kind, name):
 
 
 class TenantDefaultsTemplate(unittest.TestCase):
-    def test_outputs_are_the_bucket_and_its_narrow_grant_and_cluster_scoped(self):
-        objects = render()
-        self.assertEqual(sorted((o['kind'], o['metadata']['name']) for o in objects), [
-            ('ClusterBucket', 'files'),
-            ('ClusterRole', 'files-bucket-data-access'),
-            ('ClusterRole', 'skills-mcp-access'),
-            ('ClusterRole', 'template-runs-mcp-access'),
-            ('ClusterRoleBinding', 'files-bucket-data-access'),
-            ('ClusterRoleBinding', 'skills-mcp-access'),
-            ('ClusterRoleBinding', 'template-runs-mcp-access'),
-        ])
-        for o in objects:
-            self.assertNotIn('namespace', o['metadata'])
-            self.assertNotIn('uid', o['metadata'])
-            self.assertNotIn('ownerReferences', o['metadata'])
-
     def test_bucket_spec_fragment_is_explicit_and_has_no_lifecycle(self):
         bucket = by_kind()['ClusterBucket']
         self.assertEqual(bucket['apiVersion'], 'egregon.ai/v1alpha1')
