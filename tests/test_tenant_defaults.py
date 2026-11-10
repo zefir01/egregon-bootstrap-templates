@@ -27,8 +27,10 @@ class TenantDefaultsTemplate(unittest.TestCase):
             ('ClusterBucket', 'files'),
             ('ClusterRole', 'files-bucket-data-access'),
             ('ClusterRole', 'skills-mcp-access'),
+            ('ClusterRole', 'template-runs-mcp-access'),
             ('ClusterRoleBinding', 'files-bucket-data-access'),
             ('ClusterRoleBinding', 'skills-mcp-access'),
+            ('ClusterRoleBinding', 'template-runs-mcp-access'),
         ])
         for o in objects:
             self.assertNotIn('namespace', o['metadata'])

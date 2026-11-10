@@ -15,8 +15,10 @@ The bundled `../libs/egregon.libsonnet` builds Egregon resources and grants usin
 | `ClusterRoleBinding` | `files-bucket-data-access` | group `system:authenticated` → that role |
 | `ClusterRole` | `skills-mcp-access` | `egregon.ai` / `clustermcps`, `resourceNames: [skills]`, verbs exactly `get`, `list_skills`, `read_skill` |
 | `ClusterRoleBinding` | `skills-mcp-access` | group `system:authenticated` → that role |
+| `ClusterRole` | `template-runs-mcp-access` | `egregon.ai` / `clustermcps`, `resourceNames: [template-runs]`, verbs exactly `get`, `patch_run`, `delete_run` |
+| `ClusterRoleBinding` | `template-runs-mcp-access` | group `system:authenticated` → that role |
 
-The ClusterMcp `skills` itself is not an output: the Skills-controller creates it. The roles have no wildcard, no delete or version-history verbs, no bucket CRUD and no Workspace entry grant (`access /`).
+The ClusterMcps `skills` and `template-runs` themselves are not outputs: the Skills-controller and the Tenant-controller create them. The tool verbs `patch_run`/`delete_run` are not the native `patch`/`delete` of the ClusterMcp, and they give no right on any Run: the Template-controller admits only a direct Agent/ClusterAgent owner of the target Run. The roles have no wildcard, no delete or version-history verbs, no bucket CRUD and no Workspace entry grant (`access /`).
 Sync waves: role `-2`, binding `-1`, bucket `0`.
 
 Test (needs `jsonnet` on `PATH`): `python3 -m unittest discover -s tests`.
