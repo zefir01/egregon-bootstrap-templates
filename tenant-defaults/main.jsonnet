@@ -15,6 +15,14 @@ egregon.grant('template-runs-mcp-access', null, 'system:authenticated', [
   // The Tenant-controller provisions this platform MCP; its tool verbs are not the native patch/delete of the ClusterMcp,
   // and they grant nothing on Runs: the Template-controller admits only an owner of the target Run.
   egregon.permission(['clustermcps'], ['template-runs'], ['get', 'patch_run', 'delete_run']),
+], principal_kind='Group', wave=-2, binding_wave=-1) +
+egregon.grant('mental-models-mcp-access', null, 'system:authenticated', [
+  // The Tenant-controller provisions this platform MCP (spec.function mental-models, served by the Memory-controller). This is only the entry to its five tools:
+  // the tools themselves review the caller's own native rights on the exact policy, source, resource and every explicit recipient (use, subscribe_mm, delete),
+  // and nothing here grants any of those. Source and recipient grants are native and never shared.
+  egregon.permission(['clustermcps'], ['mental-models'],
+                     ['get', 'create_personal_mental_model', 'read_personal_mental_model', 'delete_personal_mental_model',
+                      'create_mental_model_subscription', 'delete_mental_model_subscription']),
 ], principal_kind='Group', wave=-2, binding_wave=-1) + [
   // Versioned storage, no expiration policy.
   egregon.clusterBucket('files', max_url_ttl='24h', versioning='Enabled', object_lock=false),
