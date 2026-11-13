@@ -13,8 +13,10 @@ egregon.grant('skills-mcp-access', null, 'system:authenticated', [
 ], principal_kind='Group', wave=-2, binding_wave=-1) +
 egregon.grant('template-runs-mcp-access', null, 'system:authenticated', [
   // The Tenant-controller provisions this platform MCP; its tool verbs are not the native patch/delete of the ClusterMcp,
-  // and they grant nothing on Runs: the Template-controller admits only an owner of the target Run.
-  egregon.permission(['clustermcps'], ['template-runs'], ['get', 'patch_run', 'delete_run']),
+  // and they grant nothing on Runs: the Template-controller admits a live Run's tool only from an owner of the target Run,
+  // and a hibernation archive tool only by the caller's own native patch/delete/list/get on that Run.
+  egregon.permission(['clustermcps'], ['template-runs'],
+                     ['get', 'patch_run', 'delete_run', 'hibernate_run', 'wake_run', 'list_hibernated_runs', 'delete_hibernated_run']),
 ], principal_kind='Group', wave=-2, binding_wave=-1) +
 egregon.grant('mental-models-mcp-access', null, 'system:authenticated', [
   // The Tenant-controller provisions this platform MCP (spec.function mental-models, served by the Memory-controller). This is only the entry to its five tools:
