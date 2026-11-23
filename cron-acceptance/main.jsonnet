@@ -17,8 +17,8 @@ function(
   local cluster = agent_kind == 'ClusterAgent';
   local principalPrefix = 'minikube:system:serviceaccount:sandboxes-' + slug + '--' + namespace + ':';
 
-  // The Complete right must exist before the Agent autostarts.
-  local rbacWave = { 'egregon.ai/sync-wave': '-1' };
+  // One sync wave only: a multi-wave sync waits for the Agent's health, which a woken Agent reaches only after the wake attaches it.
+  local rbacWave = {};
   local one(i) =
     local agentName = name_prefix + '-' + role + '-' + i;
     local sandboxName = agentName;
@@ -26,7 +26,7 @@ function(
     local sandbox = {
       apiVersion: 'egregon.ai/v1alpha1',
       kind: 'Sandbox',
-      metadata: { name: sandboxName, namespace: namespace, annotations: { 'egregon.ai/sync-wave': '0' } },
+      metadata: { name: sandboxName, namespace: namespace, annotations: {} },
       spec: {
         image: '10.110.153.236:5000/ai-platform/egregon-sandbox-executor:4b490a84a8998e01f7c14fee446299d8db276c84',
         resources: { limits: { cpu: '500m' }, requests: { cpu: '50m' } },
@@ -41,7 +41,7 @@ function(
         name: agentName,
         [if !cluster then 'namespace']: namespace,
         labels: { role: role, 'acceptance/run': name_prefix },
-        annotations: { 'egregon.ai/sync-wave': '0' },
+        annotations: {},
       },
       spec: {
         model: model,
