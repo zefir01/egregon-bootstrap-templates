@@ -10,6 +10,7 @@ function(
   autostart='true',
   model='gpt-example',
   route_name='openai-shared-pool',
+  rbac='none',
 )
   local workspace = std.extVar('workspace');
   assert std.startsWith(workspace, 'root:') : 'workspace must be root:<slug>, got ' + workspace;
@@ -55,20 +56,15 @@ function(
       },
     };
     local subjects = [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'User', name: principal }];
-    // Test fixture: a narrow Role for Complete/Wait on the own Agent was refused by AuthServer in the cronctl instance
-    // (operation_denied) while cluster-admin is accepted, so the Sandbox user is bound to cluster-admin.
-    [sandbox, agent, if cluster then {
+    // Test fixture, ClusterTemplateRun only (a TemplateRun cannot own a ClusterRoleBinding): AuthServer of the cronctl
+    // instance refused Complete (operation_denied) for a Sandbox user holding any namespaced or egregon.ai-wide grant and
+    // accepted only cluster-admin, so with rbac=cluster-admin the Sandbox user is bound to it.
+    [sandbox, agent] + (if rbac == 'cluster-admin' then [{
       apiVersion: 'rbac.authorization.k8s.io/v1',
       kind: 'ClusterRoleBinding',
       metadata: { name: 'complete-' + namespace + '-' + agentName, annotations: rbacWave },
       subjects: subjects,
       roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'cluster-admin' },
-    } else {
-      apiVersion: 'rbac.authorization.k8s.io/v1',
-      kind: 'RoleBinding',
-      metadata: { name: 'complete-' + agentName, namespace: namespace, annotations: rbacWave },
-      subjects: subjects,
-      roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'cluster-admin' },
-    }];
+    }] else []);
 
   std.flattenArrays([one(i) for i in std.range(1, std.parseInt(agent_count))])
