@@ -55,7 +55,7 @@ function(
         prompts: { '00-task': 'CRON-ACC-START agent=' + agentName + '. Do the task, then end with Complete.' },
       },
     };
-    local rules = [{ apiGroups: ['egregon.ai'], resources: [resource], resourceNames: [agentName], verbs: ['Complete', 'Wait'] }];
+    local rules = [{ apiGroups: ['egregon.ai'], resources: [resource], resourceNames: [agentName], verbs: ['get', 'Complete', 'Wait'] }];
     local subjects = [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'User', name: principal }];
     [sandbox, agent] + (
       if cluster then [
