@@ -10,7 +10,6 @@ function(
   autostart='true',
   model='gpt-example',
   route_name='openai-shared-pool',
-  rbac='none',
 )
   local workspace = std.extVar('workspace');
   assert std.startsWith(workspace, 'root:') : 'workspace must be root:<slug>, got ' + workspace;
@@ -56,15 +55,30 @@ function(
       },
     };
     local subjects = [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'User', name: principal }];
-    // Test fixture, ClusterTemplateRun only (a TemplateRun cannot own a ClusterRoleBinding): AuthServer of the cronctl
-    // instance refused Complete (operation_denied) for a Sandbox user holding any namespaced or egregon.ai-wide grant and
-    // accepted only cluster-admin, so with rbac=cluster-admin the Sandbox user is bound to it.
-    [sandbox, agent] + (if rbac == 'cluster-admin' then [{
-      apiVersion: 'rbac.authorization.k8s.io/v1',
-      kind: 'ClusterRoleBinding',
-      metadata: { name: 'complete-' + namespace + '-' + agentName, annotations: rbacWave },
-      subjects: subjects,
-      roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'cluster-admin' },
-    }] else []);
+    // The Complete/Wait right on the own agent. cronctl additionally needs the test1 ClusterRole `nonresource-all` bound to
+    // system:authenticated (AuthServer evaluates a non-resource review for the Sandbox user besides this grant).
+    local rules = [{ apiGroups: ['egregon.ai'], resources: [if cluster then 'clusteragents' else 'agents'], resourceNames: [agentName], verbs: ['get', 'Complete', 'Wait'] }];
+    local roleName = 'complete-' + agentName;
+    [sandbox, agent] + (
+      if cluster then [
+        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'ClusterRole', metadata: { name: namespace + '-' + roleName, annotations: rbacWave }, rules: rules },
+        {
+          apiVersion: 'rbac.authorization.k8s.io/v1',
+          kind: 'ClusterRoleBinding',
+          metadata: { name: namespace + '-' + roleName, annotations: rbacWave },
+          subjects: subjects,
+          roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: namespace + '-' + roleName },
+        },
+      ] else [
+        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'Role', metadata: { name: roleName, namespace: namespace, annotations: rbacWave }, rules: rules },
+        {
+          apiVersion: 'rbac.authorization.k8s.io/v1',
+          kind: 'RoleBinding',
+          metadata: { name: roleName, namespace: namespace, annotations: rbacWave },
+          subjects: subjects,
+          roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'Role', name: roleName },
+        },
+      ]
+    );
 
   std.flattenArrays([one(i) for i in std.range(1, std.parseInt(agent_count))])
