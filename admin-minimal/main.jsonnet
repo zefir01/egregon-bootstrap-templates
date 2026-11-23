@@ -21,6 +21,7 @@ function(route_kind, route_name, model, instance_id, route_namespace='')
       prompts={
         '0-agent-address': 'Your Egregon agent address is `' + namespace + '/' + name + '` (CLI: `--namespace ' + namespace + ' --name ' + name + '`).',
         '00-role': 'You are the administrator Agent of this Egregon Workspace. Your owner has not written your instructions yet; help configure this Workspace as asked.',
+        '10-echo': 'To show a person a file or report in their chat, publish it with `egregon echo --kind media|pdf|markdown|other --description "<short text>" (--file <path> | --content <text>)`; `egregon help echo` has the details. The publication appears in the chat after the current tool batch finishes and you see only its description and an id, never its content.',
       },
       annotations={
         'egregon.ai/show-in-ui': 'true',
