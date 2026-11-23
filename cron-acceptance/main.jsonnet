@@ -57,10 +57,16 @@ function(
     local subjects = [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'User', name: principal }];
     // Test fixture: a narrow Role for Complete/Wait on the own Agent was refused by AuthServer in the cronctl instance
     // (operation_denied) while cluster-admin is accepted, so the Sandbox user is bound to cluster-admin.
-    [sandbox, agent, {
+    [sandbox, agent, if cluster then {
       apiVersion: 'rbac.authorization.k8s.io/v1',
       kind: 'ClusterRoleBinding',
       metadata: { name: 'complete-' + namespace + '-' + agentName, annotations: rbacWave },
+      subjects: subjects,
+      roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'cluster-admin' },
+    } else {
+      apiVersion: 'rbac.authorization.k8s.io/v1',
+      kind: 'RoleBinding',
+      metadata: { name: 'complete-' + agentName, namespace: namespace, annotations: rbacWave },
       subjects: subjects,
       roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'cluster-admin' },
     }];
