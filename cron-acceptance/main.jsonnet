@@ -17,6 +17,8 @@ function(
   local cluster = agent_kind == 'ClusterAgent';
   local principalPrefix = 'minikube:system:serviceaccount:sandboxes-' + slug + '--' + namespace + ':';
 
+  // The Complete right must exist before the Agent autostarts.
+  local rbacWave = { 'egregon.ai/sync-wave': '-1' };
   local one(i) =
     local agentName = name_prefix + '-' + role + '-' + i;
     local sandboxName = agentName;
@@ -57,20 +59,20 @@ function(
     local subjects = [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'User', name: principal }];
     [sandbox, agent] + (
       if cluster then [
-        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'ClusterRole', metadata: { name: 'complete-' + agentName }, rules: rules },
+        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'ClusterRole', metadata: { name: 'complete-' + agentName, annotations: rbacWave }, rules: rules },
         {
           apiVersion: 'rbac.authorization.k8s.io/v1',
           kind: 'ClusterRoleBinding',
-          metadata: { name: 'complete-' + agentName },
+          metadata: { name: 'complete-' + agentName, annotations: rbacWave },
           subjects: subjects,
           roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'complete-' + agentName },
         },
       ] else [
-        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'Role', metadata: { name: 'complete-' + agentName, namespace: namespace }, rules: rules },
+        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'Role', metadata: { name: 'complete-' + agentName, namespace: namespace, annotations: rbacWave }, rules: rules },
         {
           apiVersion: 'rbac.authorization.k8s.io/v1',
           kind: 'RoleBinding',
-          metadata: { name: 'complete-' + agentName, namespace: namespace },
+          metadata: { name: 'complete-' + agentName, namespace: namespace, annotations: rbacWave },
           subjects: subjects,
           roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'Role', name: 'complete-' + agentName },
         },
