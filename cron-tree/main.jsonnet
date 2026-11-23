@@ -6,6 +6,7 @@ function(
   suspend='false',
   schedule='* * * * *',
   with_queue='false',
+  run_agents='1',
   model='gpt-example',
   route_name='openai-shared-pool',
 )
@@ -43,7 +44,7 @@ function(
       suspend: suspend == 'true',
       action: { create_run: {
         template_ref: { name: 'worker' },
-        parameters: { directory: { jsonnet: { tlas: [{ name: 'namespace', value: namespace }, { name: 'name_prefix', value: name_prefix + 'r' }] } } },
+        parameters: { directory: { jsonnet: { tlas: [{ name: 'namespace', value: namespace }, { name: 'name_prefix', value: name_prefix + 'r' }, { name: 'agent_count', value: run_agents }] } } },
         completion_selector: { matchLabels: { role: 'worker' } },
       } },
     },
