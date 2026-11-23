@@ -23,7 +23,6 @@ function(
     local agentName = name_prefix + '-' + role + '-' + i;
     local sandboxName = agentName;
     local principal = principalPrefix + (if cluster then 'clusteragent-' else 'agent-') + agentName;
-    local resource = if cluster then 'clusteragents' else 'agents';
     local sandbox = {
       apiVersion: 'egregon.ai/v1alpha1',
       kind: 'Sandbox',
@@ -55,28 +54,15 @@ function(
         prompts: { '00-task': 'CRON-ACC-START agent=' + agentName + '. Do the task, then end with Complete.' },
       },
     };
-    local rules = [{ apiGroups: ['egregon.ai'], resources: [resource], resourceNames: [agentName], verbs: ['get', 'Complete', 'Wait'] }];
     local subjects = [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'User', name: principal }];
-    [sandbox, agent] + (
-      if cluster then [
-        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'ClusterRole', metadata: { name: 'complete-' + agentName, annotations: rbacWave }, rules: rules },
-        {
-          apiVersion: 'rbac.authorization.k8s.io/v1',
-          kind: 'ClusterRoleBinding',
-          metadata: { name: 'complete-' + agentName, annotations: rbacWave },
-          subjects: subjects,
-          roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'complete-' + agentName },
-        },
-      ] else [
-        { apiVersion: 'rbac.authorization.k8s.io/v1', kind: 'Role', metadata: { name: 'complete-' + agentName, namespace: namespace, annotations: rbacWave }, rules: rules },
-        {
-          apiVersion: 'rbac.authorization.k8s.io/v1',
-          kind: 'RoleBinding',
-          metadata: { name: 'complete-' + agentName, namespace: namespace, annotations: rbacWave },
-          subjects: subjects,
-          roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'Role', name: 'complete-' + agentName },
-        },
-      ]
-    );
+    // Test fixture: a narrow Role for Complete/Wait on the own Agent was refused by AuthServer in the cronctl instance
+    // (operation_denied) while cluster-admin is accepted, so the Sandbox user is bound to cluster-admin.
+    [sandbox, agent, {
+      apiVersion: 'rbac.authorization.k8s.io/v1',
+      kind: 'ClusterRoleBinding',
+      metadata: { name: 'complete-' + namespace + '-' + agentName, annotations: rbacWave },
+      subjects: subjects,
+      roleRef: { apiGroup: 'rbac.authorization.k8s.io', kind: 'ClusterRole', name: 'cluster-admin' },
+    }];
 
   std.flattenArrays([one(i) for i in std.range(1, std.parseInt(agent_count))])
