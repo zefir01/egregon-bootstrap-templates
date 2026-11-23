@@ -5,5 +5,6 @@ Only bootstrap templates and their non-secret dependencies belong here.
 Resource constructors live in [`libs/`](libs/README.md); templates declare their settings and permissions.
 
 * [`tenant-defaults/`](tenant-defaults/README.md): the base resources of a Tenant (shared bucket `files` and its narrow data grant).
+* [`admin-minimal/`](admin-minimal/README.md): the minimal administrator Agent, its Sandbox and its personal Workspace-admin grant, launched by a human.
 
 Test: `python3 -m unittest discover -s tests` (needs `jsonnet`).

@@ -5,7 +5,7 @@ A self-contained subset of the libraries in `zefir01/ai-platform` at `8ac7bc581`
 - `k8s.libsonnet`: `cluster_role`, `role`, `roleBinding`, `clusterRoleBinding` from
   `infra/argo/libs/k8s.libsonnet`, expressed as methods with `::`.
 - `egregon.libsonnet`: scoped `permission` and paired role/binding `grant` from
-  `egregon-templates/libs/egregon.libsonnet`, plus the bootstrap `clusterBucket` template.
+  `egregon-templates/libs/egregon.libsonnet`, plus the bootstrap `clusterBucket` template and the minimal `sandbox`, `agent` and `principal` constructors of `admin-minimal`.
 
 No Argo config, external variables or files outside this repository are needed.
 Only constructors required by the bootstrap resources are included.

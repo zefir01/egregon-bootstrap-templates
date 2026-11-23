@@ -13,6 +13,38 @@ local k8s = import 'k8s.libsonnet';
     },
   },
 
+  // Identity is deterministic before CREATE: the Agent's Sandbox runs in the execution namespace
+  // sandboxes-<tenant slug>--<namespace> and federates as a User, not a Kubernetes ServiceAccount.
+  principal(workspace, namespace, name)::
+    'minikube:system:serviceaccount:sandboxes-' + std.substr(workspace, 5, std.length(workspace) - 5) +
+    '--' + namespace + ':agent-' + name,
+
+  sandbox(name, namespace, image, wave=0):: {
+    apiVersion: 'egregon.ai/v1alpha1',
+    kind: 'Sandbox',
+    metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } },
+    spec: {
+      image: image,
+      resources: { requests: { cpu: '50m' }, limits: { cpu: '500m' } },
+      volume_claim: { accessModes: ['ReadWriteOnce'], resources: { requests: { storage: '1Gi' } } },
+    },
+  },
+
+  // route is a typed reference {kind, namespace?, name}; the default Bucket is the shared ClusterBucket `files`.
+  agent(name, namespace, model, route, sandbox_name, prompts, annotations, wave=1):: {
+    apiVersion: 'egregon.ai/v1alpha1',
+    kind: 'Agent',
+    metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } + annotations },
+    spec: {
+      model: model,
+      route: route,
+      default_bucket: { kind: 'ClusterBucket', name: 'files' },
+      prompts: prompts,
+      sandbox: { name: sandbox_name },
+      network_policy: {},
+    },
+  },
+
   permission(resources, names, verbs):: {
     apiGroups: ['egregon.ai'],
     resources: resources,
