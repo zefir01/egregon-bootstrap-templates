@@ -11,7 +11,7 @@ function(route_kind, route_name, model, instance_id, route_namespace='')
   local name = 'adm-' + instance_id;
   local principal = egregon.principal(workspace, namespace, name);
   [
-    egregon.sandbox(name, namespace, sandboxImage),
+    egregon.sandbox(name, namespace, sandboxImage, wave=1),
     egregon.agent(
       name,
       namespace,
