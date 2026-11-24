@@ -13,11 +13,17 @@ local k8s = import 'k8s.libsonnet';
     },
   },
 
-  // Identity is deterministic before CREATE: the Agent's Sandbox runs in the execution namespace
-  // sandboxes-<tenant slug>--<namespace> and federates as a User, not a Kubernetes ServiceAccount.
-  principal(workspace, namespace, name)::
-    'minikube:system:serviceaccount:sandboxes-' + std.substr(workspace, 5, std.length(workspace) - 5) +
-    '--' + namespace + ':agent-' + name,
+  // The native RBAC group of an AgentsGroup, for subjects[] of a RoleBinding or ClusterRoleBinding. The formula is owned by
+  // services/egregon/core/agentsgroup (NativeGroupName); it needs only the full Workspace path.
+  nativeGroupName(workspace, namespace, name):: 'egregon:agentsgroup:' + workspace + '/' + namespace + '/' + name,
+
+  // agents maps a displayed alias to an Agent name of the same namespace.
+  agentsGroup(name, namespace, agents, wave=1):: {
+    apiVersion: 'egregon.ai/v1alpha1',
+    kind: 'AgentsGroup',
+    metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } },
+    spec: { agents: agents },
+  },
 
   sandbox(name, namespace, image, wave=0):: {
     apiVersion: 'egregon.ai/v1alpha1',

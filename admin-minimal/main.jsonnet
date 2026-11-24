@@ -1,5 +1,5 @@
-// The minimal administrator of a Workspace: one Agent with its Sandbox and a personal grant of the Agent identity
-// to the ClusterRole egregon-workspace-admin, which tenant-defaults owns. Output names derive from instance_id alone.
+// The minimal administrator of a Workspace: one Agent with its Sandbox and a one-member AgentsGroup whose native
+// group is bound to the ClusterRole egregon-workspace-admin, which tenant-defaults owns. Output names derive from instance_id alone.
 local egregon = import '../libs/egregon.libsonnet';
 local k8s = import '../libs/k8s.libsonnet';
 
@@ -9,7 +9,6 @@ local namespace = 'default';
 
 function(route_kind, route_name, model, instance_id, route_namespace='')
   local name = 'adm-' + instance_id;
-  local principal = egregon.principal(workspace, namespace, name);
   [
     egregon.sandbox(name, namespace, sandboxImage, wave=1),
     egregon.agent(
@@ -28,8 +27,9 @@ function(route_kind, route_name, model, instance_id, route_namespace='')
         'egregon.ai/display-name': 'Admin',
       },
     ),
+    egregon.agentsGroup(name, namespace, { admin: name }),
     k8s.clusterRoleBinding(name, 'egregon-workspace-admin', sa=null, namespace=null) {
       metadata+: { annotations: { 'egregon.ai/sync-wave': '0' } },
-      subjects: [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'User', name: principal }],
+      subjects: [{ apiGroup: 'rbac.authorization.k8s.io', kind: 'Group', name: egregon.nativeGroupName(workspace, namespace, name) }],
     },
   ]

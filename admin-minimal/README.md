@@ -12,7 +12,8 @@ External variables (set by the ClusterTemplate source): `workspace` (the Workspa
 | --- | --- | --- |
 | `Sandbox` | `adm-<instance_id>` | installed executor image, `default` namespace |
 | `Agent` | `adm-<instance_id>` | selected Route and model, default Bucket `files`, minimal placeholder instructions, shown in the UI |
-| `ClusterRoleBinding` | `adm-<instance_id>` | the Agent identity (`User`) → ClusterRole `egregon-workspace-admin`, which `tenant-defaults` owns |
+| `AgentsGroup` | `adm-<instance_id>` | one member: the Agent (`default` namespace) |
+| `ClusterRoleBinding` | `adm-<instance_id>` | the native `Group` of that AgentsGroup (`egregon:agentsgroup:<workspace>/default/adm-<instance_id>`) → ClusterRole `egregon-workspace-admin`, which `tenant-defaults` owns |
 
 Every name derives from `instance_id` alone, so a separate launch never adopts an existing output. The grant is limited to this
 Workspace; no rule is defined here.
