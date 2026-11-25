@@ -26,6 +26,13 @@ egregon.grant('mental-models-mcp-access', null, 'system:authenticated', [
   egregon.permission(['clustermcps'], ['mental-models'],
                      ['get', 'create_personal_mental_model', 'read_personal_mental_model', 'delete_personal_mental_model',
                       'create_mental_model_subscription', 'delete_mental_model_subscription']),
+], principal_kind='Group', wave=-2, binding_wave=-1) +
+egregon.grant('protocol-adapter-mcp-access', null, 'system:authenticated', [
+  // The Tenant-controller provisions this platform MCP (spec.function protocol-adapter, served by the Endpoint-controller). This is only the
+  // entry to its three tools: each call is still authorized by the caller's own native create/patch/delete on the exact ProtocolAdapter and,
+  // for create and patch, use/get of every desired Secret and ConfigMap; nothing here grants any of those.
+  egregon.permission(['clustermcps'], ['protocol-adapter'],
+                     ['get', 'create_protocol_adapter', 'patch_protocol_adapter', 'delete_protocol_adapter']),
 ], principal_kind='Group', wave=-2, binding_wave=-1) + [
   // Every right inside this Workspace and nothing outside it. No binding here: the Tenant-controller binds the first
   // human User of a new Tenant to it, and the admin-minimal template binds its Agent to it.
