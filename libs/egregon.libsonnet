@@ -25,14 +25,22 @@ local k8s = import 'k8s.libsonnet';
     spec: { agents: agents },
   },
 
-  sandbox(name, namespace, image, wave=0):: {
+  // storage=null renders no volume_claim: an ephemeral emptyDir work directory. storage_class_name is passed natively,
+  // so '' means no class.
+  sandbox(name, namespace, image, wave=0, storage='1Gi', storage_class_name=null)::
+    assert storage != null || storage_class_name == null : 'sandbox ' + name + ': storage_class_name requires storage (storage=null is ephemeral and has no volume claim)';
+  {
     apiVersion: 'egregon.ai/v1alpha1',
     kind: 'Sandbox',
     metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } },
     spec: {
       image: image,
       resources: { requests: { cpu: '50m' }, limits: { cpu: '500m' } },
-      volume_claim: { accessModes: ['ReadWriteOnce'], resources: { requests: { storage: '1Gi' } } },
+      [if storage != null then 'volume_claim']: {
+        accessModes: ['ReadWriteOnce'],
+        resources: { requests: { storage: storage } },
+        [if storage_class_name != null then 'storageClassName']: storage_class_name,
+      },
     },
   },
 

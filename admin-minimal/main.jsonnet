@@ -7,10 +7,13 @@ local workspace = std.extVar('workspace');
 local sandboxImage = std.extVar('sandbox_image');
 local namespace = 'default';
 
-function(route_kind, route_name, model, instance_id, route_namespace='')
+// sandbox_storage: '' = default 1Gi persistent disk, 'none' = ephemeral emptyDir work directory, otherwise a size.
+// sandbox_storage_class_name: absent = cluster default class; any string, including '', is passed natively.
+function(route_kind, route_name, model, instance_id, route_namespace='', sandbox_storage='', sandbox_storage_class_name=null)
   local name = 'adm-' + instance_id;
+  local storage = if sandbox_storage == '' then '1Gi' else if sandbox_storage == 'none' then null else sandbox_storage;
   [
-    egregon.sandbox(name, namespace, sandboxImage, wave=1),
+    egregon.sandbox(name, namespace, sandboxImage, wave=1, storage=storage, storage_class_name=sandbox_storage_class_name),
     egregon.agent(
       name,
       namespace,
