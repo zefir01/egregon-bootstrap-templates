@@ -52,7 +52,8 @@ class TenantDefaultsTemplate(unittest.TestCase):
         self.assertEqual(objects['ClusterRoleBinding']['metadata'], {
             'name': 'files-bucket-data-access', 'annotations': {'egregon.ai/sync-wave': '-1'}})
         self.assertEqual(objects['ClusterBucket']['metadata'], {
-            'name': 'files', 'annotations': {'egregon.ai/sync-wave': '0'}})
+            'name': 'files', 'annotations': {'egregon.ai/sync-wave': '0', 'egregon.ai/sync-options': 'Prune=false',
+                                             'egregon.ai/compare-options': 'IgnoreExtraneous'}})
 
     def test_skills_mcp_grant_is_exactly_use_of_the_one_clustermcp_for_authenticated(self):
         role = by_name('ClusterRole', 'skills-mcp-access')
