@@ -40,6 +40,10 @@ egregon.grant('protocol-adapter-mcp-access', null, 'system:authenticated', [
     { apiGroups: ['*'], resources: ['*'], verbs: ['*'] },
     { nonResourceURLs: ['*'], verbs: ['*'] },
   ]) { metadata+: { annotations: { 'egregon.ai/sync-wave': '-2' } } },
-  // Versioned storage, no expiration policy.
-  egregon.clusterBucket('files', max_url_ttl='24h', versioning='Enabled', object_lock=false),
+  // Versioned storage, no expiration policy. The Run prunes what the profile stops rendering; the bucket holds customer
+  // data, so it is never pruned, and once left out of the profile it does not keep the Run OutOfSync (the Tenant waits
+  // for Synced).
+  egregon.clusterBucket('files', max_url_ttl='24h', versioning='Enabled', object_lock=false) {
+    metadata+: { annotations+: { 'egregon.ai/sync-options': 'Prune=false', 'egregon.ai/compare-options': 'IgnoreExtraneous' } },
+  },
 ]
