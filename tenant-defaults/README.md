@@ -10,7 +10,7 @@ The bundled `../libs/egregon.libsonnet` builds Egregon resources and grants usin
 
 | Kind | Name | Content |
 | --- | --- | --- |
-| `ClusterBucket` | `files` | `presigned_url.max_ttl: 24h`, `versioning.status: Enabled`, `object_lock.enabled: false`; no lifecycle expiration, everything else is the Bucket contract default |
+| `ClusterBucket` | `files` | `presigned_url.max_ttl: 24h`, `versioning.status: Enabled`, `object_lock.enabled: false`; no lifecycle expiration, everything else is the Bucket contract default; `egregon.ai/sync-options: Prune=false` and `egregon.ai/compare-options: IgnoreExtraneous`: a later profile without it never deletes the bucket and its data, and the left-over bucket does not keep the Run OutOfSync |
 | `ClusterRole` | `files-bucket-data-access` | `egregon.ai` / `clusterbuckets`, `resourceNames: [files]`, verbs exactly `get`, `list_objects`, `get_object`, `get_object_version`, `put_object` |
 | `ClusterRoleBinding` | `files-bucket-data-access` | group `system:authenticated` → that role |
 | `ClusterRole` | `skills-mcp-access` | `egregon.ai` / `clustermcps`, `resourceNames: [skills]`, verbs exactly `get`, `list_skills`, `read_skill` |
