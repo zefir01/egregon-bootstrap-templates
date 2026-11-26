@@ -7,6 +7,8 @@ A self-contained subset of the libraries in `zefir01/ai-platform` at `8ac7bc581`
 - `egregon.libsonnet`: scoped `permission` and paired role/binding `grant` from
   `egregon-templates/libs/egregon.libsonnet`, plus the bootstrap `clusterBucket` template and the minimal `sandbox`, `agent`, `agentsGroup` and `nativeGroupName` constructors of `admin-minimal`.
 
+`protocolAdapter`, `template` and `parameters` (the closed string-argument schema of a Template) serve the ready consumer templates; `envoy.libsonnet` holds their shared Envoy configuration and image pin.
+
 No Argo config, external variables or files outside this repository are needed.
 Only constructors required by the bootstrap resources are included.
 

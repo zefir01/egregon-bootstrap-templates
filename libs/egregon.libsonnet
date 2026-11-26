@@ -80,4 +80,62 @@ local k8s = import 'k8s.libsonnet';
     },
   ],
 
+  // network_policy.external is rendered by each ready consumer template from its fixed upstream: only that peer and port.
+  protocolAdapter(name, namespace, spec, wave=1):: {
+    apiVersion: 'egregon.ai/v1alpha1',
+    kind: 'ProtocolAdapter',
+    metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } },
+    spec: spec,
+  },
+
+  // A Template (namespace given) or ClusterTemplate (namespace=null) whose source is a directory of this public
+  // repository at an exact revision; its Jsonnet top-level arguments are the string arguments of `parameters_schema`.
+  template(name, namespace, path, revision, parameters_schema, display_name):: {
+    apiVersion: 'egregon.ai/v1alpha1',
+    kind: if namespace == null then 'ClusterTemplate' else 'Template',
+    metadata: {
+      name: name,
+      [if namespace != null then 'namespace']: namespace,
+      annotations: { 'egregon.ai/display-name': display_name },
+    },
+    spec: {
+      parameters_schema: parameters_schema,
+      source: {
+        repoURL: 'https://github.com/zefir01/egregon-bootstrap-templates.git',
+        targetRevision: revision,
+        path: path,
+        directory: { include: 'main.jsonnet' },
+      },
+    },
+  },
+
+  // The closed schema of Jsonnet string top-level arguments: arguments maps an argument name to the JSON schema of its value.
+  parameters(arguments, order=std.objectFields(arguments), optional=[]):: {
+    '$schema': 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object',
+    additionalProperties: false,
+    required: ['directory'],
+    properties: { directory: {
+      type: 'object',
+      additionalProperties: false,
+      required: ['jsonnet'],
+      properties: { jsonnet: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['tlas'],
+        properties: { tlas: {
+          type: 'array',
+          minItems: std.length(order) - std.length(optional),
+          maxItems: std.length(order),
+          items: { oneOf: [{
+            type: 'object',
+            additionalProperties: false,
+            required: ['name', 'value'],
+            properties: { name: { const: arg }, value: arguments[arg], code: { const: false } },
+          } for arg in order] },
+          allOf: [{ contains: { properties: { name: { const: arg } }, required: ['name'] }, minContains: if std.member(optional, arg) then 0 else 1, maxContains: 1 } for arg in order],
+        } },
+      } },
+    } },
+  },
 }
