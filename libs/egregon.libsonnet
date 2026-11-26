@@ -25,8 +25,8 @@ local k8s = import 'k8s.libsonnet';
     spec: { agents: agents },
   },
 
-  // storage=null renders no volume_claim: an ephemeral emptyDir work directory. storage_class_name is passed natively,
-  // so '' means no class.
+  // storage=null renders no volume_claim: an ephemeral work directory in the container's writable layer, lost whenever
+  // the container is re-created. storage_class_name is passed natively, so '' means no class.
   sandbox(name, namespace, image, wave=0, storage='1Gi', storage_class_name=null)::
     assert storage != null || storage_class_name == null : 'sandbox ' + name + ': storage_class_name requires storage (storage=null is ephemeral and has no volume claim)';
   {

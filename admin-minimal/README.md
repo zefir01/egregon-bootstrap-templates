@@ -8,10 +8,10 @@ External variables (set by the ClusterTemplate source): `workspace` (the Workspa
 (the Sandbox executor image of the installation). Top-level string arguments: `route_kind` (`Route` or `ClusterRoute`),
 `route_namespace` (`Route` only), `route_name`, `model`, and the hidden `instance_id` (a UUID chosen once by the launcher).
 Optional string arguments choose the Sandbox work disk: `sandbox_storage` (absent or empty: persistent 1Gi; `none`: ephemeral
-`emptyDir` work directory without PVC; otherwise the size, e.g. `5Gi`) and `sandbox_storage_class_name` (absent: cluster default
+work directory in the executor container's writable layer, without PVC or volume; otherwise the size, e.g. `5Gi`) and `sandbox_storage_class_name` (absent: cluster default
 class; any string, including empty, becomes `volume_claim.storageClassName` natively; invalid with `none`). Ephemeral files in
-`/work` (including `.home` and `.egregon`) survive a container restart but are lost on suspend and Pod replacement; there is no
-migration between modes and the `emptyDir` has no size bound.
+`/work` (including `.home` and `.egregon`) are lost whenever the container is re-created: a container restart in the same Pod,
+suspend and Pod replacement; there is no migration between modes and the ephemeral `/work` has no size bound.
 
 | Kind | Name | Content |
 | --- | --- | --- |
