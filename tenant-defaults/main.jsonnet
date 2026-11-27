@@ -33,6 +33,13 @@ egregon.grant('protocol-adapter-mcp-access', null, 'system:authenticated', [
   // for create and patch, use/get of every desired Secret and ConfigMap; nothing here grants any of those.
   egregon.permission(['clustermcps'], ['protocol-adapter'],
                      ['get', 'create_protocol_adapter', 'patch_protocol_adapter', 'delete_protocol_adapter']),
+], principal_kind='Group', wave=-2, binding_wave=-1) +
+egregon.grant('telemetry-mcp-access', null, 'system:authenticated', [
+  // The Tenant-controller provisions this platform MCP (spec.function telemetry, served by the TelemetryController). This is only the entry to its
+  // read tools: each call is still authorized by the caller's own native query right on Telemetry/default of the namespace (or on ClusterTelemetry/default
+  // for the whole workspace); nothing here grants that right.
+  egregon.permission(['clustermcps'], ['telemetry'],
+                     ['get', 'query_logs', 'query_traces', 'query_metrics', 'aggregate', 'get_trace']),
 ], principal_kind='Group', wave=-2, binding_wave=-1) + [
   // Every right inside this Workspace and nothing outside it. No binding here: the Tenant-controller binds the first
   // human User of a new Tenant to it, and the admin-minimal template binds its Agent to it.
