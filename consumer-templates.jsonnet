@@ -125,4 +125,9 @@ function(revision, namespace=null)
       replicas: replicas,
       auth_mode: authMode,
     }),
+    // Operator-run in the developer Workspace only (not a customer template): the ClusterMcp of the developer telemetry MCP.
+    declare('telemetry-developer-mcp', 'Telemetry — developer MCP', [], {
+      developer_groups: { type: 'string', minLength: 1, maxLength: 1024 },
+      bridge_user: principal,
+    }),
   ]
