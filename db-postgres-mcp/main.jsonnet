@@ -9,6 +9,9 @@
 //   ca_configmap:        optional ConfigMap with the public CA (key `ca.crt`) the server certificate is verified against;
 //                        without it the system roots of the image are used. The server certificate is always verified
 //                        (verify-full) against `host`.
+//                        The CA is read when the process starts and a same-name ConfigMap edit does not roll the Pod: publish the new
+//                        CA as a new ConfigMap name and change this argument.
+//   The non-secret profile is McpController.spec.env: changing any argument changes the Pod template and rolls the Pods.
 //   Egress is restricted to exactly host:port; the platform links come from the hosting operator.
 local egregon = import '../libs/egregon.libsonnet';
 
@@ -16,7 +19,6 @@ local caDir = '/etc/sql-mcp/ca';
 local isIPv4(host) = std.all([c == '.' || (c >= '0' && c <= '9') for c in std.stringChars(host)]);
 
 function(name, namespace, image, host, port, database, credentials_secret, ca_configmap='', connect_timeout='15s', replicas='2', auth_mode='password', access_token_user='')
-  local profileName = name + '-profile';
   local profile = {
     SQL_MCP_ENGINE: 'postgres',
     SQL_MCP_HOST: host,
@@ -27,17 +29,11 @@ function(name, namespace, image, host, port, database, credentials_secret, ca_co
   } + (if access_token_user != '' then { SQL_MCP_ACCESS_TOKEN_USER: access_token_user } else {})
   + (if ca_configmap != '' then { SQL_MCP_TLS_CA_FILE: caDir + '/ca.crt' } else {});
   egregon.mcpControllerRights(name, namespace, [credentials_secret]) + [
-    {
-      apiVersion: 'v1',
-      kind: 'ConfigMap',
-      metadata: { name: profileName, namespace: namespace, annotations: { 'egregon.ai/sync-wave': '0' } },
-      data: profile,
-    },
     egregon.mcpController(name, namespace, {
       workload_kind: 'Deployment',
       replicas: std.parseInt(replicas),
       image: image,
-      env_from: [{ configMapRef: { name: profileName } }],
+      env: [{ name: key, value: profile[key] } for key in std.objectFields(profile)],
       resources: { requests: { cpu: '50m', memory: '96Mi' }, limits: { cpu: '500m', memory: '512Mi' } },
       network_policy: { external: { mode: 'Restricted', rules: [
         { [if isIPv4(host) then 'cidr' else 'fqdn']: if isIPv4(host) then host + '/32' else host, ports: [{ port: std.parseInt(port), protocol: 'TCP' }] },
