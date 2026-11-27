@@ -92,6 +92,48 @@ local k8s = import 'k8s.libsonnet';
     spec: spec,
   },
 
+  // A hosted MCP controller: the hosting operator derives the workload, the kcp ServiceAccount and its token from it.
+  // spec is passed through unchanged.
+  mcpController(name, namespace, spec, wave=1):: {
+    apiVersion: 'egregon.ai/v1alpha1',
+    kind: 'McpController',
+    metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } },
+    spec: spec,
+  },
+
+  mcp(name, namespace, spec, wave=2):: {
+    apiVersion: 'egregon.ai/v1alpha1',
+    kind: 'Mcp',
+    metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } },
+    spec: spec,
+  },
+
+  // The kcp rights of the ServiceAccount the operator creates for the McpController `name`, which are the ones an SDK
+  // controller needs (mcps, their status, events, its McpController and leases), and `get` of the named Secrets.
+  mcpControllerRights(name, namespace, secret_names, wave=-2)::
+    local subject = { kind: 'ServiceAccount', name: 'mcp-controller-' + name, namespace: namespace };
+    local clusterName = 'mcp-controller-sdk-' + namespace + '-' + name;
+    local sdk = 'mcp-controller-sdk-' + name;
+    local secrets = 'mcp-controller-secrets-' + name;
+    local annotated(resource) = resource { metadata+: { annotations: { 'egregon.ai/sync-wave': std.toString(wave) } } };
+    [
+      annotated(k8s.cluster_role(clusterName, [
+        { apiGroups: ['egregon.ai'], resources: ['mcps'], verbs: ['get', 'list', 'watch'] },
+        { apiGroups: ['egregon.ai'], resources: ['mcps/status'], verbs: ['patch'] },
+        { apiGroups: [''], resources: ['events'], verbs: ['create', 'patch'] },
+      ])),
+      annotated(k8s.clusterRoleBinding(clusterName, clusterName, subject.name, namespace)),
+      annotated(k8s.role(sdk, [
+        { apiGroups: ['egregon.ai'], resources: ['mcpcontrollers'], verbs: ['get'], resourceNames: [name] },
+        { apiGroups: ['coordination.k8s.io'], resources: ['leases'], verbs: ['get', 'create', 'update'] },
+      ], namespace=namespace)),
+      annotated(k8s.roleBinding(sdk, sdk, subject.name, namespace=namespace)) { subjects: [subject] },
+      annotated(k8s.role(secrets, [
+        { apiGroups: [''], resources: ['secrets'], verbs: ['get'], resourceNames: secret_names },
+      ], namespace=namespace)),
+      annotated(k8s.roleBinding(secrets, secrets, subject.name, namespace=namespace)) { subjects: [subject] },
+    ],
+
   // A Template (namespace given) or ClusterTemplate (namespace=null) whose source is a directory of this public
   // repository at an exact revision; its Jsonnet top-level arguments are the string arguments of `parameters_schema`.
   template(name, namespace, path, revision, parameters_schema, display_name):: {
