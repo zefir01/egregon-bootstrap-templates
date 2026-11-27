@@ -10,6 +10,9 @@ local hostname = { type: 'string', minLength: 1, maxLength: 253, pattern: '^[a-z
 local port = { type: 'string', pattern: '^[1-9][0-9]{0,4}$' };
 local replicas = { type: 'string', pattern: '^[0-9]{1,2}$' };
 local bool = { type: 'string', enum: ['true', 'false'] };
+local duration = { type: 'string', pattern: '^[0-9]{1,6}(\\.[0-9]{1,3})?s$' };
+local keyName = { type: 'string', minLength: 1, maxLength: 253, pattern: '^[-._a-zA-Z0-9]+$' };
+local headerName = { type: 'string', minLength: 1, maxLength: 64, pattern: '^[A-Za-z0-9][-A-Za-z0-9]*$' };
 local sshUser = { type: 'string', minLength: 1, maxLength: 32, pattern: '^[A-Za-z_][A-Za-z0-9_.-]*$' };
 
 function(revision, namespace=null)
@@ -27,15 +30,26 @@ function(revision, namespace=null)
       unsigned_payload: bool,
       replicas: replicas,
     }),
-    declare('envoy-bearer', 'Cloud Auth — Envoy Bearer credential adapter', ['upstream_port', 'replicas'], {
+    declare('envoy-bearer', 'Cloud Auth — Envoy Bearer credential adapter', [
+      'upstream_port', 'replicas', 'credential_key', 'credential_header', 'ca_secret', 'ca_key',
+      'route_timeout', 'stream_idle_timeout', 'websocket_upgrade', 'external_egress',
+    ], {
       name: label,
       namespace: label,
       credentials_secret: secretName,
       upstream_host: hostname,
       upstream_port: port,
       replicas: replicas,
+      credential_key: keyName,
+      credential_header: headerName,
+      ca_secret: secretName,
+      ca_key: keyName,
+      route_timeout: duration,
+      stream_idle_timeout: duration,
+      websocket_upgrade: bool,
+      external_egress: { type: 'string', enum: ['upstream', 'none'] },
     }),
-    declare('sshpiper-fixed-upstream', 'Cloud Auth — SSH adapter to one fixed upstream', ['upstream_port', 'credential', 'replicas'], {
+    declare('sshpiper-fixed-upstream', 'Cloud Auth — SSH adapter to one fixed upstream', ['upstream_port', 'credential', 'replicas', 'credential_key', 'known_hosts_configmap'], {
       name: label,
       namespace: label,
       frontend_key_secret: secretName,
@@ -45,5 +59,7 @@ function(revision, namespace=null)
       upstream_port: port,
       credential: { type: 'string', enum: ['password', 'private_key'] },
       replicas: replicas,
+      credential_key: keyName,
+      known_hosts_configmap: secretName,
     }),
   ]
