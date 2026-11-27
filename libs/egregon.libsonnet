@@ -1,3 +1,4 @@
+local agentPrompts = import 'agent-prompts.libsonnet';
 local k8s = import 'k8s.libsonnet';
 
 // Bootstrap resources and capability grants. Kubernetes structure stays in k8s.libsonnet.
@@ -45,19 +46,22 @@ local k8s = import 'k8s.libsonnet';
   },
 
   // route is a typed reference {kind, namespace?, name}; the default Bucket is the shared ClusterBucket `files`.
-  agent(name, namespace, model, route, sandbox_name, prompts, annotations, wave=1):: {
-    apiVersion: 'egregon.ai/v1alpha1',
-    kind: 'Agent',
-    metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } + annotations },
-    spec: {
-      model: model,
-      route: route,
-      default_bucket: { kind: 'ClusterBucket', name: 'files' },
-      prompts: prompts,
-      sandbox: { name: sandbox_name },
-      network_policy: {},
-    },
-  },
+  // Returns the Agent's private prompt ConfigMap followed by the Agent; the Agent carries no prompt text, only the required selector of that ConfigMap.
+  agent(name, namespace, model, route, sandbox_name, prompts, annotations, wave=1)::
+    local bundle = agentPrompts.bundle('Agent', name, namespace, namespace, { normal: prompts }, { 'egregon.ai/sync-wave': std.toString(wave - 1) });
+    bundle.config_maps + [{
+      apiVersion: 'egregon.ai/v1alpha1',
+      kind: 'Agent',
+      metadata: { name: name, namespace: namespace, annotations: { 'egregon.ai/sync-wave': std.toString(wave) } + annotations },
+      spec: {
+        model: model,
+        route: route,
+        default_bucket: { kind: 'ClusterBucket', name: 'files' },
+        prompts_selectors: bundle.selectors.normal,
+        sandbox: { name: sandbox_name },
+        network_policy: {},
+      },
+    }],
 
   permission(resources, names, verbs):: {
     apiGroups: ['egregon.ai'],
