@@ -9,9 +9,9 @@
 //   ca_configmap:        optional ConfigMap with the public CA (key `ca.crt`) the server certificate is verified against;
 //                        without it the system roots of the image are used. The server certificate is always verified
 //                        (verify-full) against `host`.
-//                        The CA is read when the process starts and a same-name ConfigMap edit does not roll the Pod: publish the new
-//                        CA as a new ConfigMap name and change this argument.
-//   The non-secret profile is McpController.spec.env: changing any argument changes the Pod template and rolls the Pods.
+//                        A same-name ConfigMap edit does not roll the Pod and is not applied uniformly (the driver reads the file per call):
+//                        publish the new CA as a new ConfigMap name and change this argument.
+//   The non-secret profile is McpController.spec.env: changing a profile value changes the Pod template and rolls the Pods.
 //   Egress is restricted to exactly host:port; the platform links come from the hosting operator.
 local egregon = import '../libs/egregon.libsonnet';
 
