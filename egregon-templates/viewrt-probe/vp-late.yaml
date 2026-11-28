@@ -1,7 +1,0 @@
-apiVersion: egregon.ai/v1alpha1
-kind: ClusterView
-metadata:
-  name: vp-late
-spec:
-  programPath: late.jsonnet
-  refreshInterval: 15s
