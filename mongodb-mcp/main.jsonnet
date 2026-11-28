@@ -48,6 +48,7 @@ function(name, namespace, default_secret, hosts, facade_image, server_image, aut
       MONGODB_SEED_HOSTS: hosts,
       MONGODB_AUTH_SOURCE: auth_source,
       MONGODB_SERVER_SELECTION_TIMEOUT: server_selection_timeout,
+      OTEL_EXPORTER_OTLP_ENDPOINT: 'http://telemetry-router.observability.svc.cluster.local:4317',
     } + (if replica_set == '' then {} else { MONGODB_REPLICA_SET: replica_set })
       + (if hasCA then { MONGODB_TLS_CA_FILE: caDirectory + '/ca.pem' } else {})),
     network_policy: { external: { mode: 'Restricted', rules: [egress(entry) for entry in std.split(hosts, ',')] } },
