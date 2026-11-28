@@ -1,0 +1,8 @@
+apiVersion: egregon.ai/v1alpha1
+kind: View
+metadata:
+  name: gv-demo-scene
+  namespace: gv-demo
+spec:
+  programPath: view.jsonnet
+  refreshInterval: 30s
