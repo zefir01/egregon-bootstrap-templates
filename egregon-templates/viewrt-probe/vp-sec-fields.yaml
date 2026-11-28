@@ -1,0 +1,7 @@
+apiVersion: egregon.ai/v1alpha1
+kind: ClusterView
+metadata:
+  name: vp-sec-fields
+spec:
+  programPath: sec-fields.jsonnet
+  refreshInterval: 15s
