@@ -1,0 +1,8 @@
+apiVersion: egregon.ai/v1alpha1
+kind: View
+metadata:
+  name: vp-view-ns
+  namespace: development
+spec:
+  programPath: route-ab.jsonnet
+  refreshInterval: 15s
