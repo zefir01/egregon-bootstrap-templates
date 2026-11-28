@@ -23,6 +23,7 @@ function(name, namespace, image, host, port, database, credentials_secret, ca_co
     SQL_MCP_DATABASE: database,
     SQL_MCP_AUTH_MODE: 'password',
     SQL_MCP_CONNECT_TIMEOUT: connect_timeout,
+    OTEL_EXPORTER_OTLP_ENDPOINT: 'http://telemetry-router.observability.svc.cluster.local:4317',
   } + (if tls_server_name != '' then { SQL_MCP_TLS_SERVER_NAME: tls_server_name } else {})
   + (if ca_configmap != '' then { SQL_MCP_TLS_CA_FILE: caDir + '/ca.crt' } else {});
   egregon.mcpControllerRights(name, namespace, [credentials_secret]) + [
