@@ -24,9 +24,11 @@ function(developer_groups, bridge_user)
       metadata: { name: name, annotations: { 'egregon.ai/sync-wave': '0' } },
       spec: { 'function': name },
     },
-    // The use of the tools: the entry verb of the ClusterMcp and the three tool verbs. The call is authorized again per tool as
-    // the calling principal's own native right; nothing here grants any resource action.
+    // The use of the tools: the entry into the Workspace (an Agent principal enters only through a group that holds `access /`;
+    // without it the caller sees no command at all), the entry verb of the ClusterMcp and the three tool verbs. The call is
+    // authorized again per tool as the calling principal's own native right; nothing here grants any resource action.
     k8s.cluster_role('telemetry-developer-mcp-use', [
+      { nonResourceURLs: ['/'], verbs: ['access'] },
       egregon.permission(['clustermcps'], [name], ['get'] + tools),
     ]) + wave(-2),
     binding('telemetry-developer-mcp-use', [
