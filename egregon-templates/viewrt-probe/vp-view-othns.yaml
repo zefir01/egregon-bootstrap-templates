@@ -1,8 +1,0 @@
-apiVersion: egregon.ai/v1alpha1
-kind: View
-metadata:
-  name: vp-view-othns
-  namespace: development
-spec:
-  programPath: view-othns.jsonnet
-  refreshInterval: 15s
